@@ -6,7 +6,7 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="Lab5cmd" />
+        <module name="Lab6host" />
         <module name="Laba6host" />
       </profile>
     </annotationProcessing>
