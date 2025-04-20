@@ -11,13 +11,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.time.LocalDateTime;
+import java.time.LocalDateTime;git
 import java.util.Scanner;
 
 
 //add John 100.5 200.0 50000 HIRED Company COMMERCIAL MainStreet 123456
 public class ClientMain {
-    private static final String SERVER_HOST = "localhogit t";
+    private static final String SERVER_HOST = "localhot t";
     private static final int SERVER_PORT = 12345;
     private static final Printer printer = new Printer();
     private static final Scanner scanner = new Scanner(System.in);

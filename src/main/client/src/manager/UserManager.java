@@ -80,7 +80,7 @@ public class UserManager {
             command = inputData[0].toLowerCase();
             argument = inputData[1];
         } else {
-            System.out.println("Команда/аргумент введены некорректно! Повторите попытку");
+            System.out.println("Комнда/аргумент введены некорректно! Повторите попытку");
             return;
         }
         if (descriptionMap.containsKey(command)) {
