@@ -19,7 +19,7 @@ import java.util.Scanner;
 
 //add John 100.5 200.0 50000 HIRED Company COMMERCIAL MainStreet 123456
 public class ClientMain {
-    private static final String SERVER_HOST = "localhost";
+    private static final String SERVER_HOST = "locaaahost";
     private static final int SERVER_PORT = 12345;
     private static final Printer printer = new Printer();
     private static final Scanner scanner = new Scanner(System.in);
