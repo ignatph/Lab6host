@@ -10,8 +10,8 @@ import utillity.Printer;
  * Terminate program
  */
 public class Exit extends Command {
-    public Exit(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public Exit(String description, boolean hasArgs, CollectionWorker workerCollection) {
+        super(description, hasArgs, workerCollection);
     }
 
     @Override

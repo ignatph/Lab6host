@@ -13,8 +13,8 @@ import java.util.stream.Collectors;
  * Output elements whose EndDate field value is greater than the specified value
  */
 public class FilterGreater extends Command {
-    public FilterGreater(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public FilterGreater(String description, boolean hasArgs, CollectionWorker workerCollection) {
+        super(description, hasArgs,workerCollection);
     }
 
     @Override

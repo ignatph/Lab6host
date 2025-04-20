@@ -2,7 +2,10 @@
 
 package main;
 import collection.CollectionWorker;
+import commandManager.CommandsManager;
+import commandManager.ServerUserManager;
 import commands.Command;
+import commands.*;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -11,14 +14,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import commandManager.CommandsManager.*;
 
 public class ServerMain {
+    private HashMap<String, Command> descriptionMap = new CommandsManager(this, collectionWorker).getOpis();
     private static final int PORT = 12345;
     private static final CollectionWorker collectionWorker = new CollectionWorker();
-    private static final Map<String, Command> serverCommands = new HashMap<>();
+
 
     public static void main(String[] args) {
-        initializeCommands();
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Сервер запущен на порту " + PORT);
@@ -34,9 +38,10 @@ public class ServerMain {
 
     private static void handleClient(Socket clientSocket) {
         try (ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
-             ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream())) {
+             ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream()); {
 
             while (true) {
+                new ServerUserManager().sendEnumValues(oos);
                 Command clientCommand = (Command) ois.readObject();
                 String response = executeCommand(clientCommand);
                 oos.writeObject(response);
@@ -48,18 +53,13 @@ public class ServerMain {
             System.err.println("Ошибка обработки клиента: " + e.getMessage());
         }
     }
-
     private static String executeCommand(Command command) {
-        if (!serverCommands.containsKey(command.getName())) {
+
+        if (!descriptionMap.containsKey(command.getName())) {
             return "Неизвестная команда: " + command.getName();
         }
         return serverCommands.get(command.getName()).execute(command.getArgs());
     }
 
-    private static void initializeCommands() {
-        serverCommands.put("add", new AddCommand(collectionWorker));
-        serverCommands.put("help", new HelpCommand(serverCommands));
-        serverCommands.put("exit", new ExitCommand());
-        // Добавьте другие команды
-    }
+
 }

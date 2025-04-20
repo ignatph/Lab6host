@@ -14,8 +14,8 @@ import utillity.Printer;
 
 public class Save extends Command {
 
-    public Save(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public Save(String description, boolean hasArgs,  CollectionWorker workerCollection) {
+        super(description, hasArgs, workerCollection);
     }
 
     @Override

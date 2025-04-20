@@ -1,5 +1,6 @@
 package manager;
 
+
 import body.*;
 import collection.CollectionWorker;
 import commandManager.CommandsManager;
@@ -7,34 +8,46 @@ import commands.Command;
 import utillity.IDGenerator;
 import utillity.Printer;
 import utillity.Reader;
-import validator.ZipCodeValidator;
 import validators.*;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.*;
-
-
-
-/**
- * Class for working with user.
- * Contains tools for checking and validating input values from user and adding new objects to collection
- */
+import java.util.function.Function;
 
 public class UserManager {
     private HashMap<String, Command> descriptionMap;
     private static boolean flag;
     private final Reader reader;
-    private static final Printer printer = new Printer();
+    private final Printer printer;
+    private Socket socket;
+    private ObjectOutputStream oos;
+    private ObjectInputStream ois;
+
     public UserManager(Reader reader, CollectionWorker collection) {
         this.reader = reader;
+        this.printer = new Printer();
         this.descriptionMap = new CommandsManager(this, collection).getOpis();
+        initializeConnection();
+    }
+
+    private void initializeConnection() {
+        try {
+            socket = new Socket("localhost", 12345);
+            oos = new ObjectOutputStream(socket.getOutputStream());
+            ois = new ObjectInputStream(socket.getInputStream());
+        } catch (IOException e) {
+            printer.print("Ошибка подключения: " + e.getMessage());
+        }
     }
 
     static {
         System.out.println("Приложение запущено!");
         flag = true;
-
     }
 
     public static boolean isRunning() {
@@ -45,225 +58,181 @@ public class UserManager {
         UserManager.flag = flag;
     }
 
-
-    /**
-     * Method for requesting user for command
-     */
     public void requestInputCommand() {
         try {
             System.out.print("\nВведите команду (help для справки): ");
             String line = reader.nextLine().strip().replaceAll("\\s+", " ");
-            System.out.println(line);
-            // (\\s+) один или несколько символов пробела, табуляции, новой строки и тд
             checkAndStartCommand(line);
         } catch (NoSuchElementException ex) {
             System.out.println("Завершение программы!");
             setIsInWork(false);
-
+            closeConnection();
         }
     }
 
+    private void checkAndStartCommand(String line) {
+        String[] inputData = line.split(" ", 2);
+        String commandName = inputData[0].toLowerCase();
+        String argument = inputData.length > 1 ? inputData[1] : null;
 
+        if (!validateCommand(commandName, argument)) return;
 
-    /**
-     * Method for validating input command and arguments
-     */
-    public void checkAndStartCommand(String line) {
-        String argument;
-        String command;
-        String[] inputData = line.split(" ");
-
-        if (inputData.length == 1) {
-            argument = null;
-            command = inputData[0].toLowerCase();
-        } else if (inputData.length == 2) {
-            command = inputData[0].toLowerCase();
-            argument = inputData[1];
-        } else {
-            System.out.println("Комнда/аргумент введены некорректно! Повторите попытку");
-            return;
-        }
-        if (descriptionMap.containsKey(command)) {
-            descriptionMap.get(command).setArgs(argument);
-            descriptionMap.get(command).execute(new Printer()); //запуск команды
-        } else {
-            System.out.println("Команды: " + inputData[0] + " – не существует! Для справки команд введите: \"help\" ");
+        try {
+            ClientCommand command = new ClientCommand(commandName, argument);
+            if ("add".equals(commandName)) {
+                WorkerDTO workerDTO = collectWorkerData();
+                command.setData(workerDTO);
+            }
+            oos.writeObject(command);
+            oos.flush();
+            Object response = ois.readObject();// ответ от сервера
+            printer.print(response.toString());
+        } catch (IOException | ClassNotFoundException e) {
+            printer.print("Ошибка выполнения команды: " + e.getMessage());
         }
     }
 
-
-
-
-    private static boolean isCommandValid(String commandName, String argument) {
-        // Пример валидации (можно добавить больше правил)
-        if (commandName.equals("add") && argument == null) {
-            printer.print("Команда add требует аргумент!");
+    private boolean validateCommand(String commandName, String argument) {
+        if (!descriptionMap.containsKey(commandName)) {
+            printer.print("Неизвестная команда: " + commandName);
+            return false;
+        }
+        if ("add".equals(commandName) && argument != null) {
+            printer.print("Команда add не требует аргументов");
             return false;
         }
         return true;
     }
-    public Worker userDataCollect(Worker worker) {
-        Scanner reader = new Scanner(System.in);
-        String userInput;
 
-        // Ввод имени
-        do {
-            System.out.print("Введите имя работника: ");
-            userInput = reader.nextLine().strip();
-            if (!userInput.isEmpty()) {
-                worker.setName(userInput);
-            } else {
-                System.out.println("Ошибка: Имя не может быть пустым!");
-            }
-        } while (!validator.NameValidator.validate(worker.getName()));
+    private WorkerDTO collectWorkerData() {
+        WorkerDTO dto = new WorkerDTO();
+        Scanner scanner = new Scanner(System.in);
 
-        // Ввод координаты X
-        Float x = null;
+        // Валидация и сбор данных
+
+
+        // Валидация имени работника
+        dto.setName(validateField(
+                scanner,
+                "Введите имя работника: ",
+                new NameValidator(),
+                input -> input // Конвертер: строка как есть
+        ));
+
+// Валидация координат (вложенный объект)
+        CoordinatesDTO coordinatesDTO = new CoordinatesDTO();
+        coordinatesDTO.setX(validateField(
+                scanner,
+                "Введите координату X (число > -848): ",
+                new XValidator(),
+                input -> Float.parseFloat(input.replace(",", ".")) // Конвертер в Float
+        ));
+        coordinatesDTO.setY(validateField(
+                scanner,
+                "Введите координату Y: ",
+                new YValidator(),
+                input -> Float.parseFloat(input) // Конвертер в Float
+        ));
+        dto.setCoordinates(coordinatesDTO);
+
+// Валидация зарплаты
+        dto.setSalary(validateField(
+                scanner,
+                "Введите зарплату (> 0): ",
+                new SalaryValidator(),
+                input -> Integer.parseInt(input) // Конвертер в Integer
+        ));
+
+// Валидация статуса (enum)
+        dto.setStatus(validateEnum(scanner, Status.class, "статус"));
+
+// Валидация организации (вложенный объект)
+        OrganizationDTO orgDTO = new OrganizationDTO();
+        orgDTO.setFullname(validateField(
+                scanner,
+                "Введите название организации (или 'null'): ",
+                new OrganizationValidator(),
+                input -> input.equalsIgnoreCase("null") ? null : input // Конвертер с обработкой null
+                 ));
+        orgDTO.setType(validateEnum(scanner, OrganizationType.class, "тип организации"));
+
+// Валидация адреса организации
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setStreet(validateField(
+                scanner,
+                "Введите улицу: ",
+                new StreetValidator(),
+                input -> input // Конвертер: строка как есть
+        ));
+        addressDTO.setZipCode(validateField(
+                scanner,
+                "Введите почтовый индекс (минимум 6 символов или 'null'): ",
+                new ZipCodeValidator(),
+                input -> input.equalsIgnoreCase("null") ? null : input // Обработка null
+        ));
+        orgDTO.setAddress(addressDTO);
+        dto.setOrganization(orgDTO);
+
+// Валидация даты окончания (с поддержкой null)
+        dto.setEndDate(validateField(
+                scanner,
+                "Введите дату окончания (ГГГГ-ММ-ДД или 'null'): ",
+                new DateValidator(),
+                input -> input.equalsIgnoreCase("null") ? null : LocalDate.parse(input) // Парсинг даты
+        ));
+
+// Валидация должности (enum)
+        dto.setPosition(validateEnum(scanner, Position.class, "должность"));
+        return dto;
+    }
+
+    // Вспомогательные методы валидации
+    private <T> T validateField(Scanner scanner,
+                                String prompt,
+                                Validator<T> validator,
+                                Function<String, T> converter) {
+        T value;
         do {
-            System.out.print("Введите координату X (число > -848): ");
-            userInput = reader.nextLine().strip();
+            System.out.print(prompt);
+            String input = scanner.nextLine().trim();
             try {
-                x = Float.parseFloat(userInput.replace(",", "."));
-                if (x <= -848) {
-                    System.out.println("Ошибка: X должен быть больше -848!");
+                value = converter.apply(input);
+                if (!validator.validate(value)) {
+                    System.out.println("Некорректное значение!");
                     continue;
                 }
-            } catch (NumberFormatException e) {
-                System.out.println("Ошибка: Некорректный формат числа!");
-            }
-        } while (!validator.XValidator.validate(x));
-
-        // Ввод координаты Y
-        Float y = null;
-        do {
-            System.out.print("Введите координату Y: ");
-            userInput = reader.nextLine().strip();
-            try {
-                y = Float.parseFloat(userInput);
-            } catch (NumberFormatException e) {
-                System.out.println("Ошибка: Некорректный формат числа!");
-            }
-        } while (!validator.YValidator.validate(y));
-
-        worker.setCoordinates(new Coordinates(x, y));
-
-        // Ввод зарплаты
-        Integer salary = null;
-        do {
-            System.out.print("Введите зарплату (> 0): ");
-            userInput = reader.nextLine().strip();
-            try {
-                salary = Integer.parseInt(userInput);
-                if (salary <= 0) {
-                    System.out.println("Ошибка: Зарплата должна быть больше 0!");
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("Ошибка: Некорректный формат числа!");
-            }
-        } while (!validator.SalaryValidator.validate(salary));
-        worker.setSalary(salary);
-
-        // Ввод статуса
-        Status status = null;
-        do {
-            System.out.print("Введите статус (" + Arrays.toString(Status.values()) + "): ");
-            userInput = reader.nextLine().strip().toUpperCase();
-            try {
-                status = Status.valueOf(userInput);
-            } catch (IllegalArgumentException e) {
-                System.out.println("Ошибка: Некорректный статус!");
-            }
-        } while (!validator.StatusValidator.validate(status));
-        worker.setStatus(status);
-
-        // Ввод организации
-        Organization organization = new Organization();
-
-        // Название организации (может быть null)
-        System.out.print("Введите название организации (или 'null'): ");
-        String orgName = reader.nextLine().strip();
-        if (orgName.equalsIgnoreCase("null")) orgName = null;
-        organization.setName(orgName);
-
-        // Тип организации
-        OrganizationType orgType = null;
-        do {
-            System.out.print("Введите тип организации (" + Arrays.toString(OrganizationType.values()) + "): ");
-            userInput = reader.nextLine().strip().toUpperCase();
-            try {
-                orgType = OrganizationType.valueOf(userInput);
-            } catch (IllegalArgumentException e) {
-                System.out.println("Ошибка: Некорректный тип организации!");
-            }
-        } while (!validator.OrganizationValidator.validate(orgType));
-        organization.setType(orgType);
-
-        // Адрес
-        Address address = new Address();
-
-        // Улица
-        do {
-            System.out.print("Введите улицу: ");
-            userInput = reader.nextLine().strip();
-            if (userInput.isEmpty()) {
-                System.out.println("Ошибка: Улица не может быть пустой!");
-            } else {
-                address.setStreet(userInput);
-            }
-        } while (!validator.StreetValidator.validate(address.getStreet()));
-
-        // Почтовый индекс
-        String zipCode = null;
-        do {
-            System.out.print("Введите почтовый индекс (минимум 6 символов или 'null'): ");
-            userInput = reader.nextLine().strip();
-            if (userInput.equalsIgnoreCase("null")) break;
-            if (userInput.length() < 6) {
-                System.out.println("Ошибка: Минимум 6 символов!");
-                continue;
-            }
-            zipCode = userInput;
-        } while (!ZipCodeValidator.validate(zipCode));
-        address.setZipCode(zipCode);
-
-        organization.setAddress(address);
-        worker.setOrganization(organization);
-
-        // Опциональные поля
-        // Дата окончания
-        LocalDate endDate = null;
-        do {
-            System.out.print("Введите дату окончания (ГГГГ-ММ-ДД или 'null'): ");
-            userInput = reader.nextLine().strip();
-            if (userInput.equalsIgnoreCase("null")) break;
-            try {
-                endDate = LocalDate.parse(userInput);
                 break;
-            } catch (DateTimeParseException e) {
-                System.out.println("Ошибка формата даты!");
+            } catch (Exception e) {
+                System.out.println("Ошибка формата данных!");
             }
         } while (true);
-        worker.setEndDate(endDate);
-
-        // Должность
-        Position position = null;
-        do {
-            System.out.print("Введите должность (" + Arrays.toString(Position.values()) + " или 'null'): ");
-            userInput = reader.nextLine().strip().toUpperCase();
-            if (userInput.equalsIgnoreCase("null")) break;
-            try {
-                position = Position.valueOf(userInput);
-                break;
-            } catch (IllegalArgumentException e) {
-                System.out.println("Ошибка: Некорректная должность!");
-            }
-        } while (true);
-        worker.setPosition(position);
-
-        // Автоматические поля
-        worker.setCreationDate(LocalDate.now());
-        worker.setId(IDGenerator.generateUniqueId());
-
-        return worker;
+        return value;
     }
+
+    private <T extends Enum<T>> T validateEnum(Scanner scanner, Class<T> enumType, String fieldName) {
+        T value;
+        do {
+            System.out.printf("Введите %s (%s): ", fieldName, Arrays.toString(enumType.getEnumConstants()));
+            String input = scanner.nextLine().trim().toUpperCase();
+            try {
+                value = Enum.valueOf(enumType, input);
+                break;
+            } catch (IllegalArgumentException e) {
+                System.out.println("Некорректное значение!");
+            }
+        } while (true);
+        return value;
+    }
+
+    private void closeConnection() {
+        try {
+            if (ois != null) ois.close();
+            if (oos != null) oos.close();
+            if (socket != null) socket.close();
+        } catch (IOException e) {
+            System.err.println("Ошибка при закрытии соединения: " + e.getMessage());
+        }
+    }
+
+    // Остальные методы валидации...
 }

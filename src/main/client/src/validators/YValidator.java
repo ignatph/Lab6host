@@ -4,9 +4,10 @@ package validators;
  * Contains validator for Y coordinate
  * Validates input value != null
  */
-public class YValidator implements Validator {
+public class YValidator implements Validator<Float> {
     public String getDescr(){return "Ошибка: Имя не может быть пустым!";};
-    public static boolean validate(Float y) {
-        return y != null;
+    @Override
+    public boolean validate(Float x) {
+        return x != null && x > -848;
     }
 }

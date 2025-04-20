@@ -9,8 +9,8 @@ import utillity.Printer;
  * Clears all collection
  */
 public class Clear extends Command {
-    public Clear(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public Clear(String description, boolean hasArgs, CollectionWorker workerCollection) {
+        super(description, hasArgs,workerCollection);
     }
 
     @Override

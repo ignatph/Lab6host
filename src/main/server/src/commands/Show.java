@@ -8,8 +8,8 @@ import utillity.Printer;
  * Show all elements in collection
  */
 public class Show extends Command {
-    public Show(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public Show(String description, boolean hasArgs,  CollectionWorker workerCollection) {
+        super(description, hasArgs, workerCollection);
     }
 
     @Override

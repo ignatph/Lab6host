@@ -15,8 +15,8 @@ import java.util.List;
 
 
 public class ExecuteScript extends Command {
-    public ExecuteScript(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public ExecuteScript(String description, boolean hasArgs,  CollectionWorker workerCollection) {
+        super(description, hasArgs,workerCollection);
     }
 
     public void execute(Printer printer) {

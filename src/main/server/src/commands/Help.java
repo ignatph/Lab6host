@@ -13,15 +13,15 @@ import java.util.Map;
  */
 
 public class Help extends Command {
-    public Help(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public Help(String description, boolean hasArgs,  CollectionWorker workerCollection) {
+        super(description, hasArgs, workerCollection);
     }
 
     @Override
     public void execute(Printer printer) {
         if (checkArgument(new Printer(), getArgs())) {
             int count = 1;
-            for (Map.Entry<String, Command> command : new CommandsManager(userManager, collection).getOpis().entrySet()) {
+            for (Map.Entry<String, Command> command : new CommandsManager(collection).getOpis().entrySet()) {
                 printer.print(count++ + ". " + command.getKey() + " " + command.getValue().getDescription());
             }
         }

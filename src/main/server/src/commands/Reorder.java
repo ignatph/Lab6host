@@ -14,8 +14,8 @@ import java.util.Stack;
  * Sort collection in reverse order
  */
 public class Reorder extends Command {
-    public Reorder(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public Reorder(String description, boolean hasArgs, CollectionWorker workerCollection) {
+        super(description, hasArgs,workerCollection);
     }
 
     @Override

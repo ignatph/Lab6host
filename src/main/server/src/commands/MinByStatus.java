@@ -1,5 +1,6 @@
 package commands;
 
+import body.Worker;
 import collection.CollectionWorker;
 import manager.UserManager;
 import utillity.Printer;
@@ -12,8 +13,8 @@ import java.util.Collections;
  */
 
 public class MinByStatus extends Command {
-    public MinByStatus(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public MinByStatus(String description, boolean hasArgs,CollectionWorker workerCollection) {
+        super(description, hasArgs, workerCollection);
     }
 
     // Компаратор для сравнения статусов

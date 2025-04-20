@@ -1,5 +1,6 @@
 package commands;
 
+import body.*;
 import collection.CollectionWorker;
 import manager.UserManager;
 import utillity.IDGenerator;
@@ -9,8 +10,8 @@ import utillity.Printer;
  * Adds new element to collection
  */
 public class Add extends Command {
-    public Add(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public Add(String description, boolean hasArgs, CollectionWorker workerCollection) {
+        super(description, hasArgs,workerCollection);
     }
     @Override
     public void execute(Printer printer) {

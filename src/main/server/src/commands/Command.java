@@ -10,17 +10,17 @@ import utillity.Printer;
  * Common abstract class for all commands
  */
 public abstract class Command implements Executable, Checkable {
-    protected final UserManager userManager;
+
     protected final CollectionWorker collection;
     private final String description;
     private final boolean hasArgs;
     private Object args;
 
 
-    public Command(String description, boolean hasArgs, UserManager userManager, CollectionWorker collection) {
+    public Command(String description, boolean hasArgs, CollectionWorker collection) {
         this.description = description;
         this.hasArgs = hasArgs;
-        this.userManager = userManager;
+
         this.collection = collection;
     }
 

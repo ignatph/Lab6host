@@ -1,5 +1,6 @@
 package commands;
 
+import body.Worker;
 import collection.CollectionWorker;
 import manager.UserManager;
 import utillity.Printer;
@@ -11,8 +12,8 @@ import java.util.Collections;
  * Output any object from the collection with the minimum value of the status field.
  */
 public class MaxByPosition extends Command {
-    public MaxByPosition(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public MaxByPosition(String description, boolean hasArgs,  CollectionWorker workerCollection) {
+        super(description, hasArgs,workerCollection);
     }
 
     // Компаратор для сравнения статусов

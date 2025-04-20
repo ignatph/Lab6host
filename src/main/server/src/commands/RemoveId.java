@@ -13,8 +13,8 @@ import utillity.Printer;
  */
 
 public class RemoveId extends Command {
-    public RemoveId(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public RemoveId(String description, boolean hasArgs, CollectionWorker workerCollection) {
+        super(description, hasArgs, workerCollection);
 
 
     }

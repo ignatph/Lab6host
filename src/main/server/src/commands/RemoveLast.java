@@ -8,8 +8,8 @@ import utillity.Printer;
  * Delete last element in collection
  */
 public class RemoveLast extends Command {
-    public RemoveLast(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public RemoveLast(String description, boolean hasArgs, CollectionWorker workerCollection) {
+        super(description, hasArgs,  workerCollection);
     }
 
     @Override

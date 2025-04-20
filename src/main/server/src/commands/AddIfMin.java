@@ -1,5 +1,6 @@
 package commands;
 
+import body.Worker;
 import collection.CollectionWorker;
 import manager.UserManager;
 import utillity.IDGenerator;
@@ -14,7 +15,6 @@ import java.util.Map;
  * Adds new element to collection if provided field value is the lowest
  */
 public class AddIfMin extends Command {
-    private final UserManager userManager;
     private final CollectionWorker collectionWorker;
     private static final Map<String, Comparator<Worker>> comparators = new HashMap<>();
 
@@ -117,9 +117,9 @@ public class AddIfMin extends Command {
 
 
     public AddIfMin(String description, boolean hasArgs,
-                    UserManager userManager, CollectionWorker collectionWorker) {
-        super(description, hasArgs, userManager, collectionWorker);
-        this.userManager = userManager;
+                     CollectionWorker collectionWorker) {
+        super(description, hasArgs,collectionWorker);
+
         this.collectionWorker = collectionWorker;
     }
 

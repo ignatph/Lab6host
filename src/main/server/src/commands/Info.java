@@ -12,8 +12,8 @@ import utillity.Printer;
 
 
 public class Info extends Command {
-    public Info(String description, boolean hasArgs, UserManager userManager, CollectionWorker workerCollection) {
-        super(description, hasArgs, userManager, workerCollection);
+    public Info(String description, boolean hasArgs, CollectionWorker workerCollection) {
+        super(description, hasArgs, workerCollection);
     }
 
     @Override
