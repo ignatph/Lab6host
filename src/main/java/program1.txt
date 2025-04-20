@@ -1,2 +1,0 @@
-
-exec src/program3.txt
