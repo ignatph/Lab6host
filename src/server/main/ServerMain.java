@@ -41,7 +41,7 @@ public class ServerMain {
              ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());) {
 
             while (true) {
-                new ServerUserManager().sendEnumValues(oos);
+                //new ServerUserManager().sendEnumValues(oos);
                 ClientCommand clientCommand = (ClientCommand)ois.readObject();
                 String response = executeCommand(clientCommand);
                 oos.writeObject(response);

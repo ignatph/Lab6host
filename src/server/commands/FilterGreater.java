@@ -1,6 +1,6 @@
 package server.commands;
 
-import client.main.server.src.body.Worker;
+import server.body.Worker;
 import server.collection.CollectionWorker;
 import utillity.Printer;
 import java.time.LocalDate;

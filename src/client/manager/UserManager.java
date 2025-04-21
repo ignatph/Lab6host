@@ -8,6 +8,7 @@ import client.validators.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.time.LocalDate;
 import java.util.*;
@@ -26,15 +27,42 @@ public class UserManager {
         this.printer = new Printer();
         initializeConnection();
     }
-
     private void initializeConnection() {
-        try {
-            socket = new Socket("localhost", 12345);
-            oos = new ObjectOutputStream(socket.getOutputStream());
-            ois = new ObjectInputStream(socket.getInputStream());
-        } catch (IOException e) {
-            printer.print("Ошибка подключения: " + e.getMessage());
+        int maxAttempts = 5; // Максимальное количество попыток
+        int retryDelay = 3000; // Задержка между попытками в миллисекундах (3 секунды)
+        int attempts = 0;
+
+        while (attempts < maxAttempts && !socket.isConnected()) {
+            try {
+                attempts++;
+                printer.print("Попытка подключения #" + attempts);
+                socket = new Socket();
+                socket.connect(new InetSocketAddress("localhost", 12345), 2000); // Таймаут 2 секунды
+
+                oos = new ObjectOutputStream(socket.getOutputStream());
+                ois = new ObjectInputStream(socket.getInputStream());
+
+                printer.print("Подключение установлено");
+                return;
+
+            } catch (IOException e) {
+                printer.print("Ошибка подключения: " + e.getMessage());
+
+                if (attempts < maxAttempts) {
+                    printer.print("Повторная попытка через " + (retryDelay / 1000) + " сек...");
+                    try {
+                        Thread.sleep(retryDelay);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        printer.print("Подключение прервано");
+                        return;
+                    }
+                }
+            }
         }
+
+        printer.print("Не удалось подключиться к серверу после " + maxAttempts + " попыток");
+        setIsInWork(false); // Остановка клиента
     }
 
     static {
@@ -85,10 +113,10 @@ public class UserManager {
     }
 
     private boolean validateCommand(String commandName, String argument) {
-        if (!descriptionMap.containsKey(commandName)) {
-            printer.print("Неизвестная команда: " + commandName);
-            return false;
-        }
+        //if (!descriptionMap.containsKey(commandName)) {
+          //  printer.print("Неизвестная команда: " + commandName);
+           // return false;
+       // }
         if ("add".equals(commandName) && argument != null) {
             printer.print("Команда add не требует аргументов");
             return false;
@@ -115,7 +143,7 @@ public class UserManager {
                 "Введите координату X (число > -848): ",
                 new XValidator(),
                 input -> Float.parseFloat(input.replace(",", "."))
-        );
+        ));
         coordinatesDTO.setY(validateField(
                 scanner,
                 "Введите координату Y: ",

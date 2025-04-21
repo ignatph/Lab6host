@@ -1,7 +1,7 @@
 package client.validators;
 
 
-import client.main.server.src.body.Status;
+import client.enums.Status;
 
 /**
  * Contains validator for status

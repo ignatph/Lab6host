@@ -29,7 +29,7 @@ public class ClientMain {
         }
         CollectionWorker worker = new CollectionWorker();
         worker.getCollection().clear();
-        UserManager userManager = new UserManager(reader, worker);
+        UserManager userManager = new UserManager(reader);
         UserManager.setIsInWork(true);
         while (UserManager.isRunning()) {
             userManager.requestInputCommand();
