@@ -46,6 +46,7 @@ public class Organization {
     }
 
 
+
     public Address getOfficialAddress() {
         return officialAddress;
     }

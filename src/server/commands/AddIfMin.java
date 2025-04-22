@@ -2,34 +2,22 @@ package server.commands;
 
 import server.body.Worker;
 import server.collection.CollectionWorker;
-import utillity.IDGenerator;
-import utillity.Printer;
+import server.network.CommandStatusResponse;
+import server.network.WorkerDTO;
+import server.utillity.Printer;
 
 import java.util.Comparator;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-/**
- * Class contains implementation of add_if_min command
- * Adds new element to collection if provided field value is the lowest
- */
+import java.util.Optional;
+
 public class AddIfMin extends Command {
     private final CollectionWorker collectionWorker;
     private static final Map<String, Comparator<Worker>> comparators = new HashMap<>();
+    private CommandStatusResponse response;
 
-    static {
-        comparators.put("id", new IdComparator());
-        comparators.put("name", new NameComparator());
-        comparators.put("salary", new SalaryComparator());
-        comparators.put("coordinates", new CoordinatesComparator());
-        comparators.put("creationdate", new CreationDateComparator());
-        comparators.put("enddate", new EndDateComparator());
-        comparators.put("position", new PositionComparator());
-        comparators.put("status", new StatusComparator());
-        comparators.put("organization", new OrganizationComparator());
-    }
-
-
+    // Все внутренние классы компараторов остаются без изменений
     private static class IdComparator implements Comparator<Worker> {
         @Override
         public int compare(Worker w1, Worker w2) {
@@ -114,44 +102,78 @@ public class AddIfMin extends Command {
         }
     }
 
+    static {
+        comparators.put("id", new IdComparator());
+        comparators.put("name", new NameComparator());
+        comparators.put("salary", new SalaryComparator());
+        comparators.put("coordinates", new CoordinatesComparator());
+        comparators.put("creationdate", new CreationDateComparator());
+        comparators.put("enddate", new EndDateComparator());
+        comparators.put("position", new PositionComparator());
+        comparators.put("status", new StatusComparator());
+        comparators.put("organization", new OrganizationComparator());
+    }
 
-    public AddIfMin(String description, boolean hasArgs,
-                     CollectionWorker collectionWorker) {
-        super(description, hasArgs,collectionWorker);
-
+    public AddIfMin(String description, boolean hasArgs, CollectionWorker collectionWorker) {
+        super(description, hasArgs, collectionWorker);
         this.collectionWorker = collectionWorker;
     }
 
     @Override
-    public void execute(Printer printer) {
-        if (checkArgument(printer, getArgs())) {
-            String field = ((String) getArgs()).toLowerCase();
-            Worker newWorker = createWorker();
-
-            Comparator<Worker> comparator = comparators.get(field);
-
-            if (collectionWorker.getCollection().isEmpty()) {
-                collectionWorker.addWorker(newWorker);
-                printer.print("Элемент добавлен (коллекция была пуста)");
+    public void execute(Printer printer, Object data) {
+        try {
+            if (!checkArgument(printer, getArgs())) {
+                response = CommandStatusResponse.ofString(
+                        "Укажите корректный параметр сравнения! Доступные параметры:\n" +
+                                String.join(", ", comparators.keySet()),
+                        false
+                );
                 return;
             }
 
-            Worker minWorker = Collections.min(collectionWorker.getCollection(), comparator);
+            String field = ((String) getArgs()).toLowerCase();
+            Worker newWorker = createWorker(data);
+            Comparator<Worker> comparator = comparators.get(field);
 
-            if (comparator.compare(newWorker, minWorker) < 0) {
+            // Использование Stream API для поиска минимального элемента
+            Optional<Worker> minWorker = collectionWorker.getCollection()
+                    .stream()
+                    .min(comparator);
+
+            if (minWorker.isEmpty()) {
                 collectionWorker.addWorker(newWorker);
-                printer.print("Элемент добавлен. Новое минимальное значение в поле '" + field + "'");
-            } else {
-                printer.print("Элемент не добавлен. Текущий минимум в поле '" + field + "': " + getFieldValue(minWorker, field));
+                response = CommandStatusResponse.ofString("Элемент добавлен (коллекция была пуста)", true);
+                return;
             }
+
+            if (comparator.compare(newWorker, minWorker.get()) < 0) {
+                collectionWorker.addWorker(newWorker);
+                response = CommandStatusResponse.ofString(
+                        "Элемент добавлен. Новое минимальное значение в поле '" + field + "'",
+                        true
+                );
+            } else {
+                response = CommandStatusResponse.ofString(
+                        "Элемент не добавлен. Текущий минимум в поле '" + field + "': " + getFieldValue(minWorker.get(), field),
+                        false
+                );
+            }
+        } catch (ClassCastException e) {
+            response = CommandStatusResponse.ofString("Неверный формат данных для команды add_if_min", false);
+        } catch (Exception e) {
+            response = CommandStatusResponse.ofString("Ошибка выполнения команды: " + e.getMessage(), false);
         }
     }
 
-    private Worker createWorker() {
-        Worker worker = new Worker();
-        worker.setId(IDGenerator.generateUniqueId());
-        userManager.userDataCollect(worker);
-        return worker;
+    @Override
+    public CommandStatusResponse getResponse() {
+        return response;
+    }
+
+    // Остальные методы без изменений
+    private Worker createWorker(Object data) {
+        WorkerDTO dto = (WorkerDTO) data;
+        return ConvertDTOtoWorker.toWorker(dto);
     }
 
     private Object getFieldValue(Worker worker, String field) {
@@ -174,9 +196,6 @@ public class AddIfMin extends Command {
         if (inputArgs instanceof String && comparators.containsKey(((String) inputArgs).toLowerCase())) {
             return true;
         }
-
-        printer.print("Укажите корректный параметр сравнения! Доступные параметры:\n" +
-                String.join(", ", comparators.keySet()));
         return false;
     }
 

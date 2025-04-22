@@ -15,5 +15,17 @@ public class ClientCommand implements Serializable {
         this.argument = argument;
     }
 
-   public String getName(){return name;};
+    public String getName() {
+        return name;
+    }
+
+    public String getArgument() {
+        return argument;
+    }
+
+    public Object getData() {
+        return data;
+    }
+
+    ;
 }

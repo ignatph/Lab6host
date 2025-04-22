@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import server.body.*;
-// ServerUserManager.java
+
 public class ServerUserManager {
     /**
      * Отправка клиенту списка допустимых значений enum

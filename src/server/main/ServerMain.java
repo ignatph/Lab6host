@@ -1,12 +1,11 @@
-
-
 package server.main;
-import client.manager.ClientCommand;
+
 import server.collection.CollectionWorker;
 import server.commandManager.CommandsManager;
-import server.commandManager.ServerUserManager;
 import server.commands.Command;
-import server.commands.*;
+import server.commands.ClientCommand;
+import server.network.CommandStatusResponse;
+import server.utillity.Printer;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -20,10 +19,7 @@ public class ServerMain {
     private static HashMap<String, Command> descriptionMap = new CommandsManager(collectionWorker).getOpis();
     private static final int PORT = 12345;
 
-
-
     public static void main(String[] args) {
-
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Сервер запущен на порту " + PORT);
 
@@ -38,12 +34,11 @@ public class ServerMain {
 
     private static void handleClient(Socket clientSocket) {
         try (ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
-             ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());) {
+             ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream())) {
 
             while (true) {
-                //new ServerUserManager().sendEnumValues(oos);
-                ClientCommand clientCommand = (ClientCommand)ois.readObject();
-                String response = executeCommand(clientCommand);
+                ClientCommand clientCommand = (ClientCommand) ois.readObject();
+                CommandStatusResponse response = executeCommand(clientCommand);
                 oos.writeObject(response);
                 oos.flush();
 
@@ -53,11 +48,38 @@ public class ServerMain {
             System.err.println("Ошибка обработки клиента: " + e.getMessage());
         }
     }
-    private static String executeCommand(ClientCommand command) {
-        descriptionMap.get(command).execute(new utillity.Printer());
-        return "";
 
+    private static CommandStatusResponse executeCommand(ClientCommand command) {
+        Command cmd = descriptionMap.get(command.getName());
+        if (cmd == null) {
+            return  CommandStatusResponse.ofString("Неизвестная команда: " + command.getName(), false);
+        }
+
+        try {
+            // Устанавливаем аргументы и данные команды
+            cmd.setArgs(command.getArgument());
+            cmd.setData(command.getData());
+
+            // Проверка аргументов
+            if (!cmd.checkArgument(new Printer(), cmd.getArgs())) {
+                return cmd.getResponse();
+            }
+
+            // Проверка данных (если требуется)
+            if (cmd.isHasArgs() && !cmd.checkData(new Printer(), cmd.getData())) {
+                return cmd.getResponse();
+            }
+
+
+            // Выполнение команды
+            cmd.execute(new Printer(), cmd.getData());
+            return cmd.getResponse();
+
+        } catch (Exception e) {
+            return CommandStatusResponse.ofString(
+                    "Ошибка выполнения команды: " + e.getMessage(),
+                    false
+            );
+        }
     }
-
-
 }

@@ -1,5 +1,7 @@
 package server.interfaces;
 
+import server.body.Worker;
+
 import java.io.IOException;
 
 

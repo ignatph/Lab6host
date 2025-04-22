@@ -1,8 +1,9 @@
 package client.manager;
+
 import client.enums.*;
-import server.commands.Command;
-import utillity.Printer;
-import utillity.Reader;
+import client.exception.InvalidInputException;
+import client.utillity.Printer;
+import client.utillity.Reader;
 import client.validators.*;
 
 import java.io.IOException;
@@ -27,26 +28,32 @@ public class UserManager {
         this.printer = new Printer();
         initializeConnection();
     }
-    private void initializeConnection() {
-        int maxAttempts = 5; // Максимальное количество попыток
-        int retryDelay = 3000; // Задержка между попытками в миллисекундах (3 секунды)
-        int attempts = 0;
 
-        while (attempts < maxAttempts && !socket.isConnected()) {
+    private void initializeConnection() {
+        int maxAttempts = 5;
+        int retryDelay = 3000;
+        int attempts = 0;
+        boolean connected = false;
+
+        while (attempts < maxAttempts && !connected) {
             try {
                 attempts++;
                 printer.print("Попытка подключения #" + attempts);
+
+                // Создаем новый сокет при каждой попытке
                 socket = new Socket();
-                socket.connect(new InetSocketAddress("localhost", 12345), 2000); // Таймаут 2 секунды
+                socket.connect(new InetSocketAddress("localhost", 12345), 2000);
 
                 oos = new ObjectOutputStream(socket.getOutputStream());
                 ois = new ObjectInputStream(socket.getInputStream());
 
                 printer.print("Подключение установлено");
+                connected = true;
                 return;
 
             } catch (IOException e) {
                 printer.print("Ошибка подключения: " + e.getMessage());
+                closeConnection(); // Закрываем неудачное соединение
 
                 if (attempts < maxAttempts) {
                     printer.print("Повторная попытка через " + (retryDelay / 1000) + " сек...");
@@ -55,14 +62,16 @@ public class UserManager {
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         printer.print("Подключение прервано");
-                        return;
+                        break;
                     }
                 }
             }
         }
 
-        printer.print("Не удалось подключиться к серверу после " + maxAttempts + " попыток");
-        setIsInWork(false); // Остановка клиента
+        if (!connected) {
+            printer.print("Не удалось подключиться к серверу после " + maxAttempts + " попыток");
+            setIsInWork(false);
+        }
     }
 
     static {
@@ -95,13 +104,23 @@ public class UserManager {
         String commandName = inputData[0].toLowerCase();
         String argument = inputData.length > 1 ? inputData[1] : null;
 
-        if (!validateCommand(commandName, argument)) return;
-
         try {
             ClientCommand command = new ClientCommand(commandName, argument);
-            if ("add".equals(commandName)) {
-                WorkerDTO workerDTO = collectWorkerData();
-                command.setData(workerDTO);
+            switch (commandName) {
+                case "add":
+                case "add_if_min":
+                case "update_id":
+                    WorkerDTO workerDTO = collectWorkerData();
+                    command.setData(workerDTO);
+                    break;
+
+                case "remove_by_id":
+                case "filter_greater_than_end_date":
+                    validateAndSetArgument(command, argument);
+                    break;
+
+
+
             }
             oos.writeObject(command);
             oos.flush();
@@ -109,20 +128,44 @@ public class UserManager {
             printer.print(response.toString());
         } catch (IOException | ClassNotFoundException e) {
             printer.print("Ошибка выполнения команды: " + e.getMessage());
+
+        } catch (InvalidInputException e) {
+            printer.print("Ошибка ввода: " + e.getMessage());
         }
+    }
+
+    private void validateAndSetArgument(ClientCommand command, String argument) throws InvalidInputException {
+        if (argument == null || argument.isEmpty()) {
+            throw new InvalidInputException("Команда требует аргумент!");
+        }
+        command.setArgument(argument);
     }
 
     private boolean validateCommand(String commandName, String argument) {
         //if (!descriptionMap.containsKey(commandName)) {
-          //  printer.print("Неизвестная команда: " + commandName);
-           // return false;
-       // }
+        //  printer.print("Неизвестная команда: " + commandName);
+        // return false;
+        // }
         if ("add".equals(commandName) && argument != null) {
             printer.print("Команда add не требует аргументов");
             return false;
         }
         return true;
     }
+
+    private void receiveResponse() throws IOException, ClassNotFoundException {
+        Object response = ois.readObject();
+        if (response instanceof String) {
+            String message = (String) response;
+            printer.print(message);
+
+            if ("EXIT".equalsIgnoreCase(message)) {
+                setIsInWork(false); // Завершение работы клиента
+                closeConnection();
+            }
+        }
+    }
+
 
     private WorkerDTO collectWorkerData() {
         WorkerDTO dto = new WorkerDTO();

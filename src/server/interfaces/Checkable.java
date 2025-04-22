@@ -1,6 +1,6 @@
 package server.interfaces;
 
-import utillity.Printer;
+import server.utillity.Printer;
 
 /**
  * Basic check for commands and arguments.

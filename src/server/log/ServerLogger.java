@@ -1,4 +1,4 @@
-package client.main.server.src.log;
+package server.log;
 
 public class ServerLogger {
 }

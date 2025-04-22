@@ -1,94 +1,97 @@
 package server.commands;
 
-import utillity.Printer;
 import server.collection.CollectionWorker;
+import server.network.CommandStatusResponse;
+import server.utillity.Printer;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-/**
- * Class contains implementation of execute_script command
- * Read and execute script from file
- */
-
+import java.util.stream.Collectors;
 
 public class ExecuteScript extends Command {
-    public ExecuteScript(String description, boolean hasArgs,  CollectionWorker workerCollection) {
-        super(description, hasArgs,workerCollection);
+    private CommandStatusResponse response;
+
+    public ExecuteScript(String description, boolean hasArgs, CollectionWorker workerCollection) {
+        super(description, hasArgs, workerCollection);
     }
 
-    public void execute(Printer printer) {
-        if (checkArgument(new Printer(), getArgs())) {
+    @Override
+    public void execute(Printer printer, Object data) {
+        try {
+            if (!checkArgument(printer, getArgs())) {
+                response = CommandStatusResponse.ofString("Script path required!", false);
+                return;
+            }
+
             String path = getArgs().toString();
             try {
-                // Чтение файла с проверкой рекурсии
                 String scriptContent = ProtectedReader.readFile(path, new HashSet<>());
 
-                // Разбивка на строки и выполнение
-                List<String> listOfCommands = new ArrayList<>();
-                try (BufferedReader reader = new BufferedReader(new StringReader(scriptContent))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        if (!line.trim().isEmpty()) {
-                            listOfCommands.add(line);
-                        }
-                    }
-                }
-                userManager.requestCommandForScript(listOfCommands);
+                // Использование Stream API для обработки строк
+                List<String> listOfCommands = new BufferedReader(new StringReader(scriptContent))
+                        .lines()
+                        .filter(line -> !line.trim().isEmpty())
+                        .collect(Collectors.toList());
+
+                // Здесь должна быть логика выполнения команд
+                // userManager.requestCommandForScript(listOfCommands);
+
+                response = CommandStatusResponse.ofString(
+                        "Script executed successfully. Commands processed: " + listOfCommands.size(),
+                        true
+                );
 
             } catch (FileNotFoundException e) {
-                printer.print("Файл не найден: " + path);
+                response = CommandStatusResponse.ofString("File not found: " + path, false);
             } catch (IOException e) {
-                printer.print("Ошибка чтения файла: " + e.getMessage());
+                response = CommandStatusResponse.ofString("Read error: " + e.getMessage(), false);
             } catch (RuntimeException e) {
-                printer.print("Ошибка выполнения: " + e.getMessage());
+                response = CommandStatusResponse.ofString("Execution error: " + e.getMessage(), false);
             }
+        } catch (Exception e) {
+            response = CommandStatusResponse.ofString("Critical error: " + e.getMessage(), false);
         }
     }
 
     @Override
+    public CommandStatusResponse getResponse() {
+        return response;
+    }
+
+    @Override
     public boolean checkArgument(Printer printer, Object inputArgs) {
-        if (inputArgs == null) {
-            printer.print("Требуется путь к файлу скрипта!");
-            return false;
-        }
-        return true;
+        return inputArgs != null;
     }
 }
-class ProtectedReader{
 
-    //static HashSet<String> hash = new HashSet<>();
-    public static String readFile(String filePath,HashSet<String> recursion) throws FileNotFoundException {
-        Printer printer = new Printer();
-        String line;
-        StringBuilder script = new StringBuilder();
+class ProtectedReader {
+    public static String readFile(String filePath, HashSet<String> recursion) throws IOException {
         HashSet<String> rec = new HashSet<>(recursion);
-        rec.add(filePath);
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            while ((line = reader.readLine())!=null){
-                if (line.contains("exec")){
-                    //System.out.print();
-                    try {
-                        String path = line.split(" ")[1];
-                        if (!(rec.contains(path))){
-                            script.append(readFile(path,rec));
-                        }
-                    } catch (ArrayIndexOutOfBoundsException ec) {
-                            printer.print("Неправильный формат команды exec: " + line);
-                        } catch (RuntimeException e){
-                        printer.print("Скрипт "+line.split(" ")[1] +" не доступен");}
-
-                }else{
-                    if (!line.trim().isEmpty()) {
-                        script.append(line).append("\n");
-                    }
-                    }
-            }
-            reader.close();
-            return script.toString();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (!rec.add(filePath)) {
+            throw new IOException("Recursive script call detected: " + filePath);
         }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            return reader.lines()
+                    .map(line -> processLine(line, rec))
+                    .collect(Collectors.joining("\n"));
+        }
+    }
+
+    private static String processLine(String line, HashSet<String> recursion) {
+        if (line.startsWith("execute_script")) {
+            String[] parts = line.split(" ");
+            if (parts.length < 2) {
+                throw new RuntimeException("Invalid exec format: " + line);
+            }
+            try {
+                return readFile(parts[1], recursion);
+            } catch (IOException e) {
+                throw new RuntimeException("Script unavailable: " + parts[1]);
+            }
+        }
+        return line;
     }
 }

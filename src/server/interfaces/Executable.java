@@ -1,10 +1,12 @@
 package server.interfaces;
 
-import utillity.Printer;
+import server.network.CommandStatusResponse;
+import server.utillity.Printer;
 
 /**
  * Contains method for executing commands
  */
 public interface Executable {
-    void execute(Printer printer, Object data); // Добавляем параметр data
+    void execute(Printer printer, Object data);
+    CommandStatusResponse getResponse();// Добавляем параметр data
 }

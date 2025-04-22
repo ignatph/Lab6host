@@ -1,4 +1,4 @@
-package client.main.server.src.network;
+package server.network;
 
 public class ServerConnection {
 }

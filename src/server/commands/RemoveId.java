@@ -1,59 +1,87 @@
 package server.commands;
 
-import client.main.server.src.body.Worker;
+import server.body.Worker;
 import server.collection.CollectionWorker;
-import utillity.Printer;
+import server.network.CommandStatusResponse;
+import server.utillity.Printer;
 
-
-/**
- * Class contains implementation of remove_at command
- * Deletes element from collection by id
- */
+import java.util.Optional;
 
 public class RemoveId extends Command {
+    private CommandStatusResponse response;
+
     public RemoveId(String description, boolean hasArgs, CollectionWorker workerCollection) {
         super(description, hasArgs, workerCollection);
-
-
     }
 
     @Override
-    public void execute(Printer printer) {
-        if (collection.getCollection().isEmpty()) {
-            printer.print("Коллекция пуста!");
-        } else {
-            if (checkArgument(new Printer(), getArgs())) {
-                int id = Integer.parseInt(getArgs().toString());
-                boolean found = false;
-                for (Worker worker : collection.getCollection()) {
-                    if (worker.getId() == id) {
-                        collection.getCollection().remove(worker);
-                        printer.print("Элемент с id ––" + worker.getId() + " успешно удален из коллекции!");
-                        found = true;
-                        break; // чтобы линкед лист не тупил и не считал вечность большую коллекцию
-                    }
-                }
-                if (!found) {
-                    printer.print("Элемент с id –– " + id + " не найден! Попробуйте еще раз");
-                }
+    public void execute(Printer printer, Object data) {
+        try {
+            if (collection.getCollection().isEmpty()) {
+                response = CommandStatusResponse.ofString("Коллекция пуста!", false);
+                return;
             }
+
+            if (!checkArgument(printer, getArgs())) {
+                return;
+            }
+
+            int id = Integer.parseInt(getArgs().toString());
+
+            Optional<Worker> workerToRemove = collection.getCollection().stream()
+                    .filter(worker -> worker.getId() == id)
+                    .findFirst();
+
+            if (workerToRemove.isPresent()) {
+                collection.getCollection().removeIf(worker -> worker.getId() == id);
+                response = CommandStatusResponse.ofString(
+                        "Элемент с id " + id + " успешно удален из коллекции!",
+                        true
+                );
+            } else {
+                response = CommandStatusResponse.ofString(
+                        "Элемент с id " + id + " не найден!",
+                        false
+                );
+            }
+
+        } catch (NumberFormatException e) {
+            response = CommandStatusResponse.ofString(
+                    "Ошибка: аргумент должен быть целым числом!",
+                    false
+            );
+        } catch (Exception e) {
+            response = CommandStatusResponse.ofString(
+                    "Ошибка выполнения команды: " + e.getMessage(),
+                    false
+            );
         }
     }
 
+    @Override
+    public CommandStatusResponse getResponse() {
+        return response;
+    }
 
     @Override
     public boolean checkArgument(Printer printer, Object inputArgs) {
         if (inputArgs == null) {
-            printer.print("У команды remove_by_id должен быть аргумент – id элемента коллекции!");
+            response = CommandStatusResponse.ofString(
+                    "Ошибка: требуется аргумент id!",
+                    false
+            );
             return false;
-        } else {
-            try {
-                Integer.parseInt(getArgs().toString());
-                return true;
-            } catch (NumberFormatException ex) {
-                printer.print("Команда remove_by_id принимает на вход в качестве аргумента только целые, положительные id !");
-                return false;
-            }
+        }
+
+        try {
+            Integer.parseInt(inputArgs.toString());
+            return true;
+        } catch (NumberFormatException e) {
+            response = CommandStatusResponse.ofString(
+                    "Ошибка: аргумент должен быть целым числом!",
+                    false
+            );
+            return false;
         }
     }
 }

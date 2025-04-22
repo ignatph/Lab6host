@@ -2,53 +2,61 @@ package server.commands;
 
 import server.body.Worker;
 import server.collection.CollectionWorker;
-import utillity.Printer;
+import server.network.CommandStatusResponse;
+import server.utillity.Printer;
 
 import java.util.Comparator;
-import java.util.Collections;
-/**
- * Class contains implementation of Max_by_position command
- * Output any object from the collection with the maximum value of the position field.
- */
+import java.util.Optional;
 
 public class MinByStatus extends Command {
-    public MinByStatus(String description, boolean hasArgs,CollectionWorker workerCollection) {
+    private CommandStatusResponse response;
+
+    public MinByStatus(String description, boolean hasArgs, CollectionWorker workerCollection) {
         super(description, hasArgs, workerCollection);
     }
 
-    // Компаратор для сравнения статусов
-    public static class StatusComparator implements Comparator<Worker> {
-        @Override
-        public int compare(Worker w1, Worker w2) {
-            return w1.getStatus().compareTo(w2.getStatus());
+    @Override
+    public void execute(Printer printer, Object data) {
+        try {
+            if (!checkArgument(printer, data)) {
+                response = CommandStatusResponse.ofString(
+                        "Ошибка: команда не принимает аргументы!",
+                        false
+                );
+                return;
+            }
+
+            // Используем Stream API для поиска минимального элемента
+            Optional<Worker> minWorker = collection.getCollection().stream()
+                    .min(Comparator.comparing(Worker::getStatus));
+
+            minWorker.ifPresentOrElse(
+                    worker -> response = CommandStatusResponse.ofString(
+                            "Объект с минимальным статусом:\n" + worker,
+                            true
+                    ),
+                    () -> response = CommandStatusResponse.ofString(
+                            "Коллекция пуста!",
+                            false
+                    )
+            );
+
+        } catch (Exception e) {
+            response = CommandStatusResponse.ofString(
+                    "Ошибка выполнения команды: " + e.getMessage(),
+                    false
+            );
         }
     }
 
     @Override
-    public void execute(Printer printer) {
-        if (collection.getCollection().isEmpty()) {
-            printer.print("Коллекция пуста!");
-            return;
-        }
-
-        // Находим объект с минимальным статусом
-        Worker minStatusWorker = Collections.min(
-                collection.getCollection(),
-                new StatusComparator()
-        );
-
-        // Выводим результат
-        printer.print("Объект с минимальным статусом:");
-        printer.print(minStatusWorker.toString());
+    public CommandStatusResponse getResponse() {
+        return response;
     }
 
     @Override
     public boolean checkArgument(Printer printer, Object inputArgs) {
-        if (inputArgs != null) {
-            printer.print("Эта команда не принимает аргументов!");
-            return false;
-        }
-        return true;
+        return inputArgs == null;
     }
 
     @Override

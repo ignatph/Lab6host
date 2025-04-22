@@ -3,7 +3,8 @@ package server.commands;
 import server.collection.CollectionWorker;
 import server.interfaces.Checkable;
 import server.interfaces.Executable;
-import utillity.Printer;
+import server.network.CommandStatusResponse;
+import server.utillity.Printer;
 
 /**
  * Common abstract class for all commands
@@ -28,7 +29,6 @@ public abstract class Command implements Executable, Checkable {
 
     @Override
     public abstract boolean checkArgument(Printer printer, Object inputArgs);
-
     // Новый метод для проверки данных
     public boolean checkData(Printer printer, Object inputData) {
         // Базовая реализация, может быть переопределена
@@ -58,4 +58,5 @@ public abstract class Command implements Executable, Checkable {
     public void setData(Object data) { // Новый сеттер для данных
         this.data = data;
     }
+
 }

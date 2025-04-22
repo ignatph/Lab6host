@@ -1,9 +1,9 @@
 package client.main;
 
 import client.manager.UserManager;
-import utillity.Printer;
-import utillity.Reader;
-import server.collection.CollectionWorker;
+import client.utillity.Printer;
+import client.utillity.Reader;
+
 
 import java.time.LocalDateTime;
 import java.util.Scanner;
@@ -27,8 +27,6 @@ public class ClientMain {
         } else {
             FILE_PATH = userInp;
         }
-        CollectionWorker worker = new CollectionWorker();
-        worker.getCollection().clear();
         UserManager userManager = new UserManager(reader);
         UserManager.setIsInWork(true);
         while (UserManager.isRunning()) {

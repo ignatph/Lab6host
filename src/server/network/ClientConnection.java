@@ -1,4 +1,4 @@
-package network;
+package server.network;
 
 public class ClientConnection {
 }
