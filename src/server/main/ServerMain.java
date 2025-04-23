@@ -73,7 +73,7 @@ public class ServerMain {
 
         } catch (Exception e) {
             return CommandStatusResponse.ofString(
-                    "Ошибка выполнения команды: " + e.getMessage(),
+                    "Ошибка ыполнения команды: " + e.getMessage(),
                     false
             );
         }

@@ -20,7 +20,7 @@ public class ClientMain {
     public static void main(String[] args) {
         Reader reader = new Reader();
         System.out.println("–––––––– " + LocalDateTime.now().toString().substring(0, 10) + " ––––––––");
-        System.out.println("Введите путь к файлу или нажмите Enter чтобы продолжить");
+        System.out.println("Введите путь  файлу или нажмите Enter чтобы продолжить");
         String userInp = reader.nextLine();
         if (userInp == null) {
             System.out.println("\n");
