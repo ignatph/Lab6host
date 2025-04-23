@@ -52,27 +52,23 @@ public class ServerMain {
     private static CommandStatusResponse executeCommand(ClientCommand command) {
         Command cmd = descriptionMap.get(command.getName());
         if (cmd == null) {
-            return  CommandStatusResponse.ofString("Неизвестная команда: " + command.getName(), false);
+            return CommandStatusResponse.ofString("Неизвестная команда: " + command.getName(), false);
         }
 
         try {
-            // Устанавливаем аргументы и данные команды
-            cmd.setArgs(command.getArgument());
-            cmd.setData(command.getData());
-
-            // Проверка аргументов
-            if (!cmd.checkArgument(new Printer(), cmd.getArgs())) {
-                return cmd.getResponse();
+            // Устанавливаем аргументы и данные ТОЛЬКО если команда их требует
+            if (cmd.isHasArgs() ) {
+                cmd.setArgs(command.getArgument());
+               // cmd.setData(command.getData());
             }
 
-            // Проверка данных (если требуется)
-            if (cmd.isHasArgs() && !cmd.checkData(new Printer(), cmd.getData())) {
+            // Проверка аргументов (только для команд с аргументами)
+            if (cmd.isHasArgs() && !cmd.checkArgument(new Printer(), command.getArgument())) {
                 return cmd.getResponse();
             }
-
 
             // Выполнение команды
-            cmd.execute(new Printer(), cmd.getData());
+            cmd.execute(new Printer(), cmd.isHasArgs() ? cmd.getData() : null);
             return cmd.getResponse();
 
         } catch (Exception e) {

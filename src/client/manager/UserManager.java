@@ -5,7 +5,6 @@ import client.exception.InvalidInputException;
 import client.utillity.Printer;
 import client.utillity.Reader;
 import client.validators.*;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -124,10 +123,18 @@ public class UserManager {
             }
             oos.writeObject(command);
             oos.flush();
-            Object response = ois.readObject();// ответ от сервера
-            printer.print(response.toString());
+            Object response = ois.readObject();
+            if (response instanceof CommandStatusResponse) {
+                CommandStatusResponse csr = (CommandStatusResponse) response;
+                printer.print(csr.getMessage());
+                if (!csr.isSuccess()) {
+                    printer.print("Ошибка в параметре ответа");
+                }
+            } else {
+                printer.print("Некорректный формат ответа от сервера");
+            }
         } catch (IOException | ClassNotFoundException e) {
-            printer.print("Ошибка выполнения команды: " + e.getMessage());
+            printer.print("Ошибка выполнения команды2: " + e.getMessage());
 
         } catch (InvalidInputException e) {
             printer.print("Ошибка ввода: " + e.getMessage());

@@ -8,5 +8,5 @@ import server.utillity.Printer;
  */
 public interface Executable {
     void execute(Printer printer, Object data);
-    CommandStatusResponse getResponse();// Добавляем параметр data
+    CommandStatusResponse getResponse();
 }

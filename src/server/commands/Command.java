@@ -21,15 +21,16 @@ public abstract class Command implements Executable, Checkable {
         this.description = description;
         this.hasArgs = hasArgs;
         this.collection = collection;
+
     }
 
-    // Изменяем сигнатуру метода
+
     @Override
     public abstract void execute(Printer printer, Object data); // Добавляем параметр data
 
     @Override
     public abstract boolean checkArgument(Printer printer, Object inputArgs);
-    // Новый метод для проверки данных
+
     public boolean checkData(Printer printer, Object inputData) {
         // Базовая реализация, может быть переопределена
         return true;
@@ -37,6 +38,9 @@ public abstract class Command implements Executable, Checkable {
 
     public boolean isHasArgs() {
         return hasArgs;
+    }
+    public Object isHasData() {
+        return data;
     }
 
     public String getDescription() {
